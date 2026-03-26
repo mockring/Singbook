@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ==================== Student (學生) ====================
+model Student {
+  id                   Int       @id @default(autoincrement())
+  name                 String
+  email                String    @unique
+  password             String
+  phone                String?
+  resetToken           String?
+  resetTokenExpiry     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  orders   Order[]
+  bookings Booking[]
+}
+
+// ==================== Course (課程) ====================
+model Course {
+  id          Int       @id @default(autoincrement())
+  name        String    // 課程名稱（例：「聲音開發」）
+  price       Int       // 課程單價（例：900）
+  sessions    Int       // 包含堂數（例：1）
+  description String?   // 詳細說明
+  image       String?   // 課程圖片 URL
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  orders Order[]
+}
+
+// ==================== Location (地點) ====================
+model Location {
+  id          Int       @id @default(autoincrement())
+  name        String    // 地點名稱（例：「信義私人錄音室」）
+  address     String    // 地址
+  price       Int       @default(0) // 地點加價/每堂（例：700）
+  description String?   // 詳細說明
+  image       String?   // 地點圖片 URL
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  bookings Booking[]
+  orders   Order[]
+}
+
+// ==================== Teacher (老師) ====================
+model Teacher {
+  id                   Int       @id @default(autoincrement())
+  name                 String
+  email                String    @unique
+  password             String
+  bio                  String?
+  image                String?
+  resetToken           String?
+  resetTokenExpiry     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  bookings   Booking[]
+  timeSlots  TimeSlot[]
+}
+
+// ==================== Order (訂單) ====================
+model Order {
+  id              Int        @id @default(autoincrement())
+  studentId       Int
+  student         Student    @relation(fields: [studentId], references: [id])
+  courseId        Int
+  course          Course     @relation(fields: [courseId], references: [id])
+  locationId      Int
+  location        Location   @relation(fields: [locationId], references: [id])
+  quantity        Int         // 購買數量（例：2）
+  totalAmount     Int         // 訂單總金額
+  status          String     @default("pending") // pending / paid / cancelled
+  paidAt          DateTime?
+  bankAccountLast5 String?   // 學生填寫的匯款帳號後五碼
+  paidAmount      Int?       // 學生實際匯款金額
+  note            String?    // 學生備註
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  bookings Booking[]
+}
+
+// ==================== Booking (預約) ====================
+model Booking {
+  id         Int       @id @default(autoincrement())
+  studentId  Int
+  student    Student   @relation(fields: [studentId], references: [id])
+  orderId    Int
+  order      Order     @relation(fields: [orderId], references: [id])
+  teacherId  Int
+  teacher    Teacher   @relation(fields: [teacherId], references: [id])
+  locationId Int
+  location   Location  @relation(fields: [locationId], references: [id])
+  startTime  DateTime  // 預約開始時間
+  endTime    DateTime  // 預約結束時間
+  duration   Int       // 預約時長（小時，1或2）
+  status     String    @default("scheduled") // scheduled / completed / cancelled
+  note       String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+// ==================== TimeSlot (老師可預約時段) ====================
+// 注意：isBooked 欄位已廢除，改用 Booking 表來計算時段是否可用
+model TimeSlot {
+  id         Int       @id @default(autoincrement())
+  teacherId  Int
+  teacher    Teacher   @relation(fields: [teacherId], references: [id])
+  date       DateTime  // 可預約日期
+  startTime  String    // 開始時間（字串，例："10:00"）
+  endTime    String    // 結束時間（字串，例："22:00"）
+  // isBooked 已廢除，請透過 Booking 表計算時段是否已被預約
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+// ==================== BankAccount (銀行帳戶) ====================
+model BankAccount {
+  id           Int      @id @default(autoincrement())
+  bankName     String   // 銀行名稱（例：玉山銀行）
+  bankCode     String   // 銀行代碼（例：012）
+  bankAccount  String   // 帳號
+  accountName  String   // 戶名
+  displayOrder Int      @default(0) // 顯示順序（數字越小越前面）
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
