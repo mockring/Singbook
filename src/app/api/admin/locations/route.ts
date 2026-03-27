@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       data: {
         name,
         address,
-        price: price || 0,
+        price: parseInt(price) || 0,
         description,
         image,
         isActive: isActive !== false,
